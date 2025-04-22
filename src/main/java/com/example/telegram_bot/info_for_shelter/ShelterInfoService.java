@@ -3,7 +3,6 @@ package com.example.telegram_bot.info_for_shelter;
 import com.example.telegram_bot.service.TelegramBot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -25,13 +24,13 @@ public class ShelterInfoService {
             "Вернуться в главное меню", "Вернуться в меню приюта"
     );
 
-    private String shelterAddress;
-    private String shelterHours;
-    private String shelterAbout;
-    private String shelterSecurity;
-    private String shelterSafety;
-    private String shelterMap;
-    private String shelterVolunteer;
+    private static final String SHELTER_ADDRESS = "ул. Павлушки, 228, г. Чебоксары";
+    private static final String SHELTER_HOURS = "Мы открыты с 9:00 до 18:00, без выходных";
+    private static final String SHELTER_ABOUT = "Мы крутой приют!!!";
+    private static final String SHELTER_SECURITY = "Охрана: +7-900-123-45-67";
+    private static final String SHELTER_SAFETY = "Не кормите животных без разрешения, соблюдайте тишину, следуйте указаниям персонала.";
+    private static final String SHELTER_MAP = "https://resizer.mail.ru/p/d17e4854-1df3-5d27-b071-09678bd0e06c/AQAKZ7RvxcFpt6tJP-wZIEYWUcB-zomIpiSdeANVrkVO7e0IGqO3JpSyzM-YTNiZBB2IdrADGH86fLgGauOQCN3cgA4.jpg";
+    private static final String SHELTER_VOLUNTEER = "Связываем вас с волонтером: +7-900-987-65-43";
 
     private final Map<Long, String> userStates = new HashMap<>();
     private final List<String> contacts = new ArrayList<>();
@@ -41,7 +40,7 @@ public class ShelterInfoService {
     }
 
     public String getVolunteerContact() {
-        return shelterVolunteer;
+        return SHELTER_VOLUNTEER;
     }
 
     public boolean isShelterCommand(String command) {
@@ -52,10 +51,10 @@ public class ShelterInfoService {
         return "AWAITING_CONTACT".equals(userStates.get(chatId));
     }
 
-    public void sendShelterMenu(long chatId, TelegramLongPollingBot bot) {
+    public void sendShelterMenu(long chatId, TelegramLongPollingBot bot, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
-        message.setText(getShelterInfo());
+        message.setText(text.isEmpty() ? "Выберите действие:" : text);
 
         ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
         List<KeyboardRow> keyboardRows = new ArrayList<>();
@@ -93,10 +92,10 @@ public class ShelterInfoService {
     public void handleShelterMenuCommand(String command, long chatId, TelegramLongPollingBot bot) {
         switch (command) {
             case "Адрес и схема проезда":
-                sendResponseWithBackButton(chatId, shelterAddress, bot);
+                sendResponseWithBackButton(chatId, SHELTER_ADDRESS, bot);
                 SendPhoto photo = new SendPhoto();
                 photo.setChatId(String.valueOf(chatId));
-                photo.setPhoto(new InputFile(shelterMap));
+                photo.setPhoto(new InputFile(SHELTER_MAP));
                 try {
                     bot.execute(photo);
                 } catch (TelegramApiException e) {
@@ -104,20 +103,20 @@ public class ShelterInfoService {
                 }
                 break;
             case "Расписание работы":
-                sendResponseWithBackButton(chatId, shelterHours, bot);
+                sendResponseWithBackButton(chatId, SHELTER_HOURS, bot);
                 break;
             case "Рассказать о приюте":
-                sendResponseWithBackButton(chatId, shelterAbout, bot);
+                sendResponseWithBackButton(chatId, SHELTER_ABOUT, bot);
                 break;
             case "Контакты охраны":
-                sendResponseWithBackButton(chatId, shelterSecurity, bot);
+                sendResponseWithBackButton(chatId, SHELTER_SECURITY, bot);
                 break;
             case "Правила безопасности":
-                sendResponseWithBackButton(chatId, shelterSafety, bot);
+                sendResponseWithBackButton(chatId, SHELTER_SAFETY, bot);
                 break;
             case "Оставить контактные данные":
                 userStates.put(chatId, "AWAITING_CONTACT");
-                sendResponseWithBackButton(chatId, "Введите номер телефона в формате +7-9**-***-****-**", bot);
+                sendResponseWithBackButton(chatId, "Введите номер телефона в формате +79***********", bot);
                 break;
             case "Вернуться в главное меню":
                 try {
@@ -127,7 +126,7 @@ public class ShelterInfoService {
                 }
                 break;
             case "Вернуться в меню приюта":
-                sendShelterMenu(chatId, bot);
+                sendShelterMenu(chatId, bot, "");
                 break;
             default:
                 sendResponseWithBackButton(chatId, "Неизвестная команда", bot);
@@ -135,13 +134,18 @@ public class ShelterInfoService {
     }
 
     public void handleContactInput(String input, long chatId, TelegramLongPollingBot bot) {
-        Pattern pattern = Pattern.compile("\\+7-9\\d{2}-\\d{3}-\\d{4}-\\d{2}");
+        if ("Вернуться в меню приюта".equals(input)) {
+            userStates.remove(chatId);
+            sendShelterMenu(chatId, bot, "");
+            return;
+        }
+        Pattern pattern = Pattern.compile("\\+?7[- ]?9[- ]?\\d{3}[- ]?\\d{4}[- ]?\\d{2}");
         if (pattern.matcher(input).matches()) {
             contacts.add(input);
             userStates.remove(chatId);
             sendResponseWithBackButton(chatId, "Контакты сохранены: " + input, bot);
         } else {
-            sendResponseWithBackButton(chatId, "Неверный формат. Введите номер в формате +7-9**-***-****-**", bot);
+            sendResponseWithBackButton(chatId, "Неверный формат. Введите номер в формате +79123456789 или 79123456789 или 7-912-345-67-89 или +7-912-345-67-89", bot);
         }
     }
 
