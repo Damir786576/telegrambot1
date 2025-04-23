@@ -116,7 +116,7 @@ public class ShelterInfoService {
                 break;
             case "Оставить контактные данные":
                 userStates.put(chatId, "AWAITING_CONTACT");
-                sendResponseWithBackButton(chatId, "Введите номер телефона в формате +79***********", bot);
+                sendResponseWithBackButton(chatId, "Введите номер телефона, например: +7912345678901, 7912345678901, +7-912-345-6789-01 или 7 912 345 6789 01", bot);
                 break;
             case "Вернуться в главное меню":
                 try {

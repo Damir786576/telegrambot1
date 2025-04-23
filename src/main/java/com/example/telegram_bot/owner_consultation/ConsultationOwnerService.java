@@ -1,6 +1,10 @@
 package com.example.telegram_bot.owner_consultation;
 
+import com.example.telegram_bot.jpa.AnimalEntity;
+import com.example.telegram_bot.jpa.UserEntity;
+import com.example.telegram_bot.service.AnimalService;
 import com.example.telegram_bot.service.TelegramBot;
+import com.example.telegram_bot.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -12,6 +16,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Component
 public class ConsultationOwnerService {
@@ -22,28 +28,32 @@ public class ConsultationOwnerService {
             "Рекомендации по обустройству дома для взрослого животного",
             "Рекомендации по обустройству дома для животного с ограничеными возможностями",
             "Советы кинолога", "Проверенные кинологи",
-            "Причины, не дать животное из приюта", "Записать контактные данные",
+            "Причины не дать животное", "Записать контактные данные",
             "Позвать волонтера", "Вернуться в главное меню", "Вернуться в меню консультации"
     );
 
-    private static final List<String> ALL_ANIMAL = List.of("Котик1", "Котик2", "Котик3");
     private static final String ANIMAL_RULE = "Тут типо правила как забрать котенка из приюта";
     private static final String DOCUMENTS = "Необходимые документы: паспорт, договор с приютом.";
-    private static final String TRANSPORT = "Рекомендации: используйте переноску";
+    private static final String TRANSPORT = "Рекомендации: используйте переноску, избегайте стресса.";
     private static final String HOME_KITTEN = "Для котика/щенка: лоток, миски, игрушки.";
     private static final String HOME_ADULT = "Для взрослого: место для отдыха, сбалансированное питание.";
-    private static final String HOME_DISABLED = "Для животного с ограничениями: специальные приспособления.";
+    private static final String HOME_DISABLED = "Для животного с ограничениями: доступность, специальные приспособления.";
     private static final String CYNOLOGIST_ADVICE = "Советы кинолога: регулярные прогулки, обучение командам.";
-    private static final String CYNOLOGIST_RECOMMEND = "Проверенные кинологи: Иван (+7-900-111-2222), Севиндж (+7-900-333-4444).";
+    private static final String CYNOLOGIST_RECOMMEND = "Проверенные кинологи: Иван (+7-900-111-2222), Анна (+7-900-333-4444).";
     private static final String REASONS_DENY = "Причины отказа: неподходящие условия, отсутствие опыта.";
     private static final String VOLUNTEER = "Связываем вас с волонтером: +7-900-987-6543";
 
     private final Map<Long, String> userStates = new HashMap<>();
-    private final List<String> contacts = new ArrayList<>();
+    private final UserService userService;
+    private final AnimalService animalService;
 
+    public ConsultationOwnerService(UserService userService, AnimalService animalService) {
+        this.userService = userService;
+        this.animalService = animalService;
+    }
 
     public String hello() {
-        return "Привет, в этом разделе ты можешь ознакомиться с животными, а также узнать как с ним взаимодейцствовать)))";
+        return "Привет, в этом разделе ты можешь ознакомиться с животными, а также узнать как с ним взаимодействовать)))";
     }
 
     public boolean isConsultationCommand(String command) {
@@ -84,13 +94,14 @@ public class ConsultationOwnerService {
         row5.add("Рекомендации по обустройству дома для животного с ограничеными возможностями");
         keyboardRows.add(row5);
 
+
         KeyboardRow row6 = new KeyboardRow();
         row6.add("Советы кинолога");
         row6.add("Проверенные кинологи");
         keyboardRows.add(row6);
 
         KeyboardRow row7 = new KeyboardRow();
-        row7.add("Причины, не дать животное из приюта");
+        row7.add("Причины не дать животное");
         row7.add("Записать контактные данные");
         keyboardRows.add(row7);
 
@@ -111,10 +122,14 @@ public class ConsultationOwnerService {
     }
 
     public void handleConsultationCommand(String command, long chatId, TelegramLongPollingBot bot) {
+        log.info("User chatId={} selected command: {}", chatId, command);
         switch (command) {
             case "Список всех животных":
-                sendResponseWithBackButton(chatId, "Доступные животные: " + String.join(", ", ALL_ANIMAL),
-                        bot);
+                Iterable<AnimalEntity> animals = animalService.findAll();
+                String animalNames = StreamSupport.stream(animals.spliterator(), false)
+                        .map(animal -> animal.getName() + " (ID: " + animal.getId() + ")")
+                        .collect(Collectors.joining(", "));
+                sendResponseWithBackButton(chatId, animalNames.isEmpty() ? "Животные не найдены." : "Доступные животные: " + animalNames, bot);
                 break;
             case "Правила знакомства с животным":
                 sendResponseWithBackButton(chatId, ANIMAL_RULE, bot);
@@ -140,12 +155,12 @@ public class ConsultationOwnerService {
             case "Проверенные кинологи":
                 sendResponseWithBackButton(chatId, CYNOLOGIST_RECOMMEND, bot);
                 break;
-            case "Причины, не дать животное из приюта":
+            case "Причины не дать животное":
                 sendResponseWithBackButton(chatId, REASONS_DENY, bot);
                 break;
             case "Записать контактные данные":
                 userStates.put(chatId, "AWAITING_CONTACT");
-                sendResponseWithBackButton(chatId, "Введите номер телефона в формате +79***********", bot);
+                sendResponseWithBackButton(chatId, "Введите номер телефона, например: +7912345678901, 7912345678901, +7-912-345-6789-01 или 7 912 345 6789 01", bot);
                 break;
             case "Позвать волонтера":
                 sendResponseWithBackButton(chatId, VOLUNTEER, bot);
@@ -165,16 +180,23 @@ public class ConsultationOwnerService {
         }
     }
 
-
     public void handleContactInput(String input, long chatId, TelegramLongPollingBot bot) {
         if ("Вернуться в меню консультации".equals(input)) {
             userStates.remove(chatId);
             menu(chatId, bot, "");
             return;
         }
-        Pattern pattern = Pattern.compile("\\+?7[- ]?9[- ]?\\d{3}[- ]?\\d{4}[- ]?\\d{2}");
+
+        Pattern pattern = Pattern.compile("\\+?7[- ]?9\\d{2}[- ]?\\d{3}[- ]?\\d{4}[- ]?\\d{2}");
         if (pattern.matcher(input).matches()) {
-            contacts.add(input);
+            UserEntity user = userService.findByChatId(chatId);
+            if (user == null) {
+                user = new UserEntity();
+                user.setChatId(chatId);
+                user.setSubscribed(false);
+            }
+            user.setPhone(input);
+            userService.save(user);
             userStates.remove(chatId);
             sendResponseWithBackButton(chatId, "Контакты сохранены: " + input, bot);
         } else {
@@ -203,3 +225,4 @@ public class ConsultationOwnerService {
         }
     }
 }
+
