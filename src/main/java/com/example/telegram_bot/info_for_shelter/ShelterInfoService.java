@@ -72,7 +72,7 @@ public class ShelterInfoService {
         KeyboardRow row3 = new KeyboardRow();
         row3.add("Правила безопасности");
         row3.add("Оставить контактные данные");
-        keyboardRows.add(row3);
+         keyboardRows.add(row3);
 
         KeyboardRow row4 = new KeyboardRow();
         row4.add("Вернуться в главное меню");
@@ -116,7 +116,7 @@ public class ShelterInfoService {
                 break;
             case "Оставить контактные данные":
                 userStates.put(chatId, "AWAITING_CONTACT");
-                sendResponseWithBackButton(chatId, "Введите номер телефона, например: +7912345678901, 7912345678901, +7-912-345-6789-01 или 7 912 345 6789 01", bot);
+                sendResponseWithBackButton(chatId, "Введите номер телефона, например: +79123456789, 79123456789, +7-912-345-6789 или 7 912 345 6789", bot);
                 break;
             case "Вернуться в главное меню":
                 try {

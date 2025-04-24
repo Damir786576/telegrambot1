@@ -14,7 +14,12 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.*;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -26,7 +31,7 @@ public class ConsultationOwnerService {
             "Список всех животных", "Правила знакомства с животным", "Список необходимых документов",
             "Рекомендации по транспортировке", "Рекомендации по обустройству дома для котика или щенка",
             "Рекомендации по обустройству дома для взрослого животного",
-            "Рекомендации по обустройству дома для животного с ограничеными возможностями",
+            "Рекомендации по обустройству дома для животного с ограниченными возможностями",
             "Советы кинолога", "Проверенные кинологи",
             "Причины не дать животное", "Записать контактные данные",
             "Позвать волонтера", "Вернуться в главное меню", "Вернуться в меню консультации"
@@ -91,9 +96,8 @@ public class ConsultationOwnerService {
         keyboardRows.add(row4);
 
         KeyboardRow row5 = new KeyboardRow();
-        row5.add("Рекомендации по обустройству дома для животного с ограничеными возможностями");
+        row5.add("Рекомендации по обустройству дома для животного с ограниченными возможностями");
         keyboardRows.add(row5);
-
 
         KeyboardRow row6 = new KeyboardRow();
         row6.add("Советы кинолога");
@@ -116,20 +120,39 @@ public class ConsultationOwnerService {
 
         try {
             bot.execute(message);
+            log.debug("Отправлено меню консультации для chatId={}: {}", chatId, text);
         } catch (TelegramApiException e) {
-            log.error("Ошибка отправки меню консультации: " + e.getMessage());
+            log.error("Ошибка отправки меню консультации для chatId={}: {}", chatId, e.getMessage(), e);
         }
     }
 
     public void handleConsultationCommand(String command, long chatId, TelegramLongPollingBot bot) {
-        log.info("User chatId={} selected command: {}", chatId, command);
+        log.info("Пользователь chatId={} выбрал команду: {}", chatId, command);
         switch (command) {
             case "Список всех животных":
                 Iterable<AnimalEntity> animals = animalService.findAll();
-                String animalNames = StreamSupport.stream(animals.spliterator(), false)
-                        .map(animal -> animal.getName() + " (ID: " + animal.getId() + ")")
-                        .collect(Collectors.joining(", "));
-                sendResponseWithBackButton(chatId, animalNames.isEmpty() ? "Животные не найдены." : "Доступные животные: " + animalNames, bot);
+                String response;
+                if (!animals.iterator().hasNext()) {
+                    response = "🐾 Животные не найдены.";
+                } else {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                    StringBuilder sb = new StringBuilder("🐾 Список животных в приюте:\n\n");
+                    List<AnimalEntity> animalList = StreamSupport.stream(animals.spliterator(), false)
+                            .collect(Collectors.toList());
+                    for (int i = 0; i < animalList.size(); i++) {
+                        AnimalEntity animal = animalList.get(i);
+                        sb.append(String.format("%d. %s %s\n", i + 1, animal.getType(), animal.getName()));
+                        sb.append(String.format("   ID: %d\n", animal.getId()));
+                        sb.append(String.format("   Возраст: %d года\n", animal.getAge()));
+                        sb.append(String.format("   Добавлено: %s\n", animal.getCreatedAt().format(formatter)));
+                        if (i < animalList.size() - 1) {
+                            sb.append("\n");
+                        }
+                    }
+                    response = sb.toString();
+                }
+                sendResponseWithBackButton(chatId, response, bot);
+                log.info("Отправлен список животных для chatId={}: {}", chatId, response);
                 break;
             case "Правила знакомства с животным":
                 sendResponseWithBackButton(chatId, ANIMAL_RULE, bot);
@@ -146,7 +169,7 @@ public class ConsultationOwnerService {
             case "Рекомендации по обустройству дома для взрослого животного":
                 sendResponseWithBackButton(chatId, HOME_ADULT, bot);
                 break;
-            case "Рекомендации по обустройству дома для животного с ограничеными возможностями":
+            case "Рекомендации по обустройству дома для животного с ограниченными возможностями":
                 sendResponseWithBackButton(chatId, HOME_DISABLED, bot);
                 break;
             case "Советы кинолога":
@@ -160,19 +183,21 @@ public class ConsultationOwnerService {
                 break;
             case "Записать контактные данные":
                 userStates.put(chatId, "AWAITING_CONTACT");
-                sendResponseWithBackButton(chatId, "Введите номер телефона, например: +7912345678901, 7912345678901, +7-912-345-6789-01 или 7 912 345 6789 01", bot);
+                sendResponseWithBackButton(chatId, "Введите номер телефона, например: +79123456789, 79123456789, +7-912-345-6789 или 7 912 345 6789", bot);
                 break;
             case "Позвать волонтера":
                 sendResponseWithBackButton(chatId, VOLUNTEER, bot);
                 break;
             case "Вернуться в главное меню":
+                userStates.remove(chatId);
                 try {
                     ((TelegramBot) bot).sendMainMenu(chatId, "");
                 } catch (Exception e) {
-                    log.error("Ошибка возврата в главное меню: " + e.getMessage());
+                    log.error("Ошибка возврата в главное меню: {}", e.getMessage(), e);
                 }
                 break;
             case "Вернуться в меню консультации":
+                userStates.remove(chatId);
                 menu(chatId, bot, "");
                 break;
             default:
@@ -187,7 +212,7 @@ public class ConsultationOwnerService {
             return;
         }
 
-        Pattern pattern = Pattern.compile("\\+?7[- ]?9\\d{2}[- ]?\\d{3}[- ]?\\d{4}[- ]?\\d{2}");
+        Pattern pattern = Pattern.compile("\\+?7[- ]?9[- ]?\\d{3}[- ]?\\d{4}[- ]?\\d{2}");
         if (pattern.matcher(input).matches()) {
             UserEntity user = userService.findByChatId(chatId);
             if (user == null) {
@@ -199,8 +224,9 @@ public class ConsultationOwnerService {
             userService.save(user);
             userStates.remove(chatId);
             sendResponseWithBackButton(chatId, "Контакты сохранены: " + input, bot);
+            log.info("Сохранены контакты для chatId={}: {}", chatId, input);
         } else {
-            sendResponseWithBackButton(chatId, "Неверный формат. Введите номер телефона, например: +7912345678901, 7912345678901, +7-912-345-6789-01 или 7 912 345 6789 01", bot);
+            sendResponseWithBackButton(chatId, "Неверный формат. Введите номер телефона, например: +79123456789, 79123456789, +7-912-345-6789 или 7 912 345 6789", bot);
         }
     }
 
@@ -220,9 +246,9 @@ public class ConsultationOwnerService {
 
         try {
             bot.execute(message);
+            log.debug("Отправлен ответ для chatId={}: {}", chatId, text);
         } catch (TelegramApiException e) {
-            log.error("Ошибка отправки ответа: " + e.getMessage());
+            log.error("Ошибка отправки ответа для chatId={}: {}", chatId, e.getMessage(), e);
         }
     }
 }
-

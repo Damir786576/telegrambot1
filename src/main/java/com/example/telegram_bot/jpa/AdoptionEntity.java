@@ -26,10 +26,6 @@ public class AdoptionEntity {
     @JoinColumn(name = "animal_id", nullable = false)
     private AnimalEntity animal;
 
-    @ManyToOne
-    @JoinColumn(name = "shelter_id", nullable = false)
-    private ShelterEntity shelter;
-
     @Column(name = "adoption_date", nullable = false)
     private LocalDate adoptionDate;
 }

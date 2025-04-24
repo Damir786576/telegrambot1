@@ -2,33 +2,28 @@ package com.example.telegram_bot.jpa;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Setter
-@Getter
-@NoArgsConstructor
 @Table(name = "animals")
+@Getter
+@Setter
 public class AnimalEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private Long id;
 
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "species")
-    private String species;
+    @Column(name = "type", nullable = false)
+    private String type;
 
-    @Column(name = "age")
+    @Column(name = "age", nullable = false)
     private Integer age;
 
-    @ManyToOne
-    @JoinColumn(name = "shelter_id", nullable = false)
-    private ShelterEntity shelter;
-
-    @OneToOne(mappedBy = "animal")
-    private AdoptionEntity adoption;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 }
