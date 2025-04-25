@@ -70,16 +70,15 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.hasMessage()) {
             long chatId = update.getMessage().getChatId();
             String messageText = update.getMessage().hasText() ? update.getMessage().getText() : "";
-            boolean hasPhoto = update.getMessage().hasPhoto();
 
-            log.info("Получено сообщение от chatId={}: text='{}', hasPhoto={}", chatId, messageText, hasPhoto);
+            log.info("Получено сообщение от chatId={}: text='{}', hasPhoto={}", chatId, messageText, update.getMessage().hasPhoto());
 
             if (petReport.isAwaitingInput(chatId)) {
                 log.debug("Обработка ввода для отчётов: chatId={}", chatId);
                 if (messageText.equals("Вернуться в меню отчётов")) {
                     petReport.handleReturnToReportMenu(chatId, this);
                 } else {
-                    petReport.handleUserInput(chatId, messageText, hasPhoto, this);
+                    petReport.handleUserInput(chatId, update, this); // Передаём Update
                 }
                 return;
             }

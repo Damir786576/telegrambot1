@@ -26,4 +26,10 @@ public class ReportEntity {
 
     @Column(name = "content")
     private String content;
+
+    @Column(name = "photo_url")
+    private String photoUrl;
+
+    @Column(name = "report_type", nullable = false)
+    private String reportType;
 }

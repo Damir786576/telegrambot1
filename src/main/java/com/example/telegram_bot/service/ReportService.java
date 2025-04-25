@@ -18,6 +18,11 @@ public class ReportService {
         this.reportRepository = reportRepository;
     }
 
+    public void save(ReportEntity report) {
+        reportRepository.save(report);
+        log.info("Сохранён отчёт ID={} для усыновления ID={}", report.getId(), report.getAdoption().getId());
+    }
+
     public void deleteByAdoption(AdoptionEntity adoption) {
         try {
             List<ReportEntity> reports = reportRepository.findByAdoptionOrderByReportDateDesc(adoption);
@@ -33,4 +38,3 @@ public class ReportService {
         }
     }
 }
-
