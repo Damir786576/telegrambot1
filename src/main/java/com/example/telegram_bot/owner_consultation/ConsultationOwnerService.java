@@ -130,29 +130,8 @@ public class ConsultationOwnerService {
         log.info("Пользователь chatId={} выбрал команду: {}", chatId, command);
         switch (command) {
             case "Список всех животных":
-                Iterable<AnimalEntity> animals = animalService.findAll();
-                String response;
-                if (!animals.iterator().hasNext()) {
-                    response = "🐾 Животные не найдены.";
-                } else {
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-                    StringBuilder sb = new StringBuilder("🐾 Список животных в приюте:\n\n");
-                    List<AnimalEntity> animalList = StreamSupport.stream(animals.spliterator(), false)
-                            .collect(Collectors.toList());
-                    for (int i = 0; i < animalList.size(); i++) {
-                        AnimalEntity animal = animalList.get(i);
-                        sb.append(String.format("%d. %s %s\n", i + 1, animal.getType(), animal.getName()));
-                        sb.append(String.format("   ID: %d\n", animal.getId()));
-                        sb.append(String.format("   Возраст: %d года\n", animal.getAge()));
-                        sb.append(String.format("   Добавлено: %s\n", animal.getCreatedAt().format(formatter)));
-                        if (i < animalList.size() - 1) {
-                            sb.append("\n");
-                        }
-                    }
-                    response = sb.toString();
-                }
+                String response = animalService.getAnimalListString();
                 sendResponseWithBackButton(chatId, response, bot);
-                log.info("Отправлен список животных для chatId={}: {}", chatId, response);
                 break;
             case "Правила знакомства с животным":
                 sendResponseWithBackButton(chatId, ANIMAL_RULE, bot);

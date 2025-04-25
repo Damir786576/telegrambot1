@@ -33,20 +33,25 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final PetReport petReport;
     private final UserService userService;
     private final VolunteerMenuService volunteerMenuService;
+    private final AdoptionService adoptionService;
+    private final ReportService reportService;
 
-    public TelegramBot(BotConfig config, ShelterInfoService shelterInfoService, ConsultationOwnerService consultationOwnerService, PetReport petReport, UserService userService, VolunteerMenuService volunteerMenuService) {
+    public TelegramBot(BotConfig config, ShelterInfoService shelterInfoService, ConsultationOwnerService consultationOwnerService, PetReport petReport, UserService userService, VolunteerMenuService volunteerMenuService, AdoptionService adoptionService, ReportService reportService) {
         this.config = config;
         this.shelterInfoService = shelterInfoService;
         this.consultationOwnerService = consultationOwnerService;
         this.petReport = petReport;
         this.userService = userService;
         this.volunteerMenuService = volunteerMenuService;
+        this.adoptionService = adoptionService;
+        this.reportService = reportService;
         List<BotCommand> listofCommands = new ArrayList<>();
         listofCommands.add(new BotCommand("/start", "Старт бота"));
         try {
             this.execute(new SetMyCommands(listofCommands, new BotCommandScopeDefault(), null));
+            log.info("Команды бота успешно установлены");
         } catch (TelegramApiException e) {
-            log.error("Ошибка в боте: " + e.getMessage(), e);
+            log.error("Ошибка установки команд бота: {}", e.getMessage(), e);
         }
     }
 
@@ -67,10 +72,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             String messageText = update.getMessage().hasText() ? update.getMessage().getText() : "";
             boolean hasPhoto = update.getMessage().hasPhoto();
 
-            log.info("Пользователь chatId={} отправил сообщение: text={}, hasPhoto={}", chatId, messageText, hasPhoto);
+            log.info("Получено сообщение от chatId={}: text='{}', hasPhoto={}", chatId, messageText, hasPhoto);
 
-            // Обработка состояний отчётов
             if (petReport.isAwaitingInput(chatId)) {
+                log.debug("Обработка ввода для отчётов: chatId={}", chatId);
                 if (messageText.equals("Вернуться в меню отчётов")) {
                     petReport.handleReturnToReportMenu(chatId, this);
                 } else {
@@ -79,15 +84,21 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
             }
 
-            // Обработка волонтёрского ввода
             if (volunteerMenuService.isAwaitingInput(chatId)) {
-                log.debug("Сообщение '{}' для chatId={} передано в handleAnimalInput", messageText, chatId);
+                log.debug("Передача сообщения '{}' в handleAnimalInput для chatId={}", messageText, chatId);
                 volunteerMenuService.handleAnimalInput(messageText, chatId, this);
+                return;
+            }
+
+            if (adoptionService.isAwaitingInput(chatId)) {
+                log.debug("Передача сообщения '{}' в handleAdoptionInput для chatId={}", messageText, chatId);
+                adoptionService.handleAdoptionInput(messageText, chatId, this);
                 return;
             }
 
             if (update.getMessage().hasText()) {
                 if (volunteerMenuService.isVolunteerCommand(messageText)) {
+                    log.debug("Обработка команды волонтёра: '{}' для chatId={}", messageText, chatId);
                     volunteerMenuService.handleVolunteerCommand(messageText, chatId, this);
                     return;
                 }
@@ -108,12 +119,19 @@ public class TelegramBot extends TelegramLongPollingBot {
                     case "Позвать волонтера":
                         sendMessage(chatId, shelterInfoService.getVolunteerContact());
                         break;
+                    case "Взять животное из приюта":
+                        adoptionService.startAdoptionProcess(chatId, this);
+                        break;
+                    case "Мои животные":
+                        adoptionService.showUserAdoptions(chatId, this);
+                        break;
                     case "Я волонтёр":
                         if (userService.isAdmin(chatId)) {
                             volunteerMenuService.sendVolunteerMenu(chatId, this, "Меню волонтёра:");
                             log.info("Пользователь chatId={} с ролью ROLE_ADMIN открыл меню волонтёра", chatId);
                         } else {
                             sendMessage(chatId, "Доступ запрещён: только для волонтёров.");
+                            log.warn("Пользователь chatId={} не имеет прав администратора", chatId);
                         }
                         break;
                     default:
@@ -171,6 +189,11 @@ public class TelegramBot extends TelegramLongPollingBot {
         row = new KeyboardRow();
         row.add("Прислать отчет о питомце");
         row.add("Позвать волонтера");
+        keyboardRows.add(row);
+
+        row = new KeyboardRow();
+        row.add("Взять животное из приюта");
+        row.add("Мои животные");
         keyboardRows.add(row);
 
         if (userService.isAdmin(chatId)) {

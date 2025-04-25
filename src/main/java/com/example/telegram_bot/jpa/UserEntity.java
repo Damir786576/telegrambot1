@@ -26,4 +26,3 @@ public class UserEntity {
     @Column(name = "role", nullable = false)
     private Role role = Role.ROLE_USER;
 }
-

@@ -148,8 +148,6 @@ public class PetReport {
                 userStates.remove(chatId);
                 sendReportMenu(chatId, bot, response);
         }
-        log.info("Обработан ввод пользователя chatId={} в состоянии {}: hasPhoto={}, input={}",
-                chatId, state, hasPhoto, input);
     }
 
     private void sendResponseWithBackButton(long chatId, String text, TelegramLongPollingBot bot) {
