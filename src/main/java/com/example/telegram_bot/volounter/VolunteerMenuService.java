@@ -22,7 +22,7 @@ import java.util.Map;
 public class VolunteerMenuService {
     private static final Logger log = LoggerFactory.getLogger(VolunteerMenuService.class);
     private static final List<String> VOLUNTEER_COMMANDS = Arrays.asList(
-            "Что должен делать волонтёр", "Добавить животное в приют", "Все пользователи",
+            "Что должен делать волонтёр?", "Добавить животное в приют", "Все пользователи",
             "Управление испытательным сроком", "Вернуться в главное меню", "Вернуться в меню волонтёра"
     );
     private static final String VOLUNTEER_INSTRUCTIONS = "Инструкции:\n" +
@@ -43,7 +43,7 @@ public class VolunteerMenuService {
     private final AnimalService animalService;
     private final UserService userService;
     private final AdoptionService adoptionService;
-    private final ReportService reportService; // Добавляем ReportService
+    private final ReportService reportService;
 
     public VolunteerMenuService(AnimalService animalService, UserService userService, AdoptionService adoptionService, ReportService reportService) {
         this.animalService = animalService;
@@ -69,7 +69,7 @@ public class VolunteerMenuService {
         List<KeyboardRow> keyboardRows = new ArrayList<>();
 
         KeyboardRow row1 = new KeyboardRow();
-        row1.add("Что должен делать волонтёр");
+        row1.add("Что должен делать волонтёр?");
         keyboardRows.add(row1);
 
         KeyboardRow row2 = new KeyboardRow();
@@ -86,7 +86,6 @@ public class VolunteerMenuService {
 
         KeyboardRow row5 = new KeyboardRow();
         row5.add("Вернуться в главное меню");
-        row5.add("Вернуться в меню волонтёра");
         keyboardRows.add(row5);
 
         keyboardMarkup.setKeyboard(keyboardRows);
@@ -110,9 +109,8 @@ public class VolunteerMenuService {
         }
 
         switch (command) {
-            case "Что должен делать волонтёр":
+            case "Что должен делать волонтёр?":
                 sendResponseWithBackButton(chatId, VOLUNTEER_INSTRUCTIONS, bot);
-                sendVolunteerMenu(chatId, bot, "Меню волонтёра:");
                 break;
             case "Добавить животное в приют":
                 userStates.put(chatId, AWAITING_ANIMAL_NAME);
@@ -192,12 +190,6 @@ public class VolunteerMenuService {
                 pendingAnimals.remove(chatId);
                 pendingTrialAdoption.remove(chatId);
                 bot.sendMainMenu(chatId, "Выберите действие:");
-                break;
-            case "Вернуться в меню волонтёра":
-                userStates.remove(chatId);
-                pendingAnimals.remove(chatId);
-                pendingTrialAdoption.remove(chatId);
-                sendVolunteerMenu(chatId, bot, "Меню волонтёра:");
                 break;
             default:
                 sendResponseWithBackButton(chatId, "Неизвестная команда", bot);
@@ -356,13 +348,10 @@ public class VolunteerMenuService {
                             AnimalEntity animal = adoption.getAnimal();
                             if (animal != null) {
                                 try {
-                                    // Удаляем связанные отчёты
                                     reportService.deleteByAdoption(adoption);
                                     log.info("Удалены отчёты для усыновления ID={}", adoptionId);
-                                    // Удаляем усыновление
                                     adoptionService.delete(adoption);
                                     log.info("Усыновление ID={} удалено из базы данных", adoptionId);
-                                    // Удаляем животное
                                     animalService.delete(animal);
                                     log.info("Животное ID={} удалено из базы данных", animal.getId());
                                 } catch (Exception e) {
@@ -426,10 +415,8 @@ public class VolunteerMenuService {
                             adoption.setTrialStatus(TrialStatus.FAILED);
                             adoptionService.save(adoption);
                             try {
-                                // Удаляем связанные отчёты
                                 reportService.deleteByAdoption(adoption);
                                 log.info("Удалены отчёты для усыновления ID={}", adoptionId);
-                                // Удаляем усыновление
                                 adoptionService.delete(adoption);
                                 log.info("Усыновление ID={} удалено из базы данных", adoptionId);
                             } catch (Exception e) {

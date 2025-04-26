@@ -1,6 +1,5 @@
 package com.example.telegram_bot.owner_consultation;
 
-import com.example.telegram_bot.jpa.AnimalEntity;
 import com.example.telegram_bot.jpa.UserEntity;
 import com.example.telegram_bot.service.AnimalService;
 import com.example.telegram_bot.service.TelegramBot;
@@ -14,15 +13,12 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 @Component
 public class ConsultationOwnerService {
@@ -34,19 +30,19 @@ public class ConsultationOwnerService {
             "Рекомендации по обустройству дома для животного с ограниченными возможностями",
             "Советы кинолога", "Проверенные кинологи",
             "Причины не дать животное", "Записать контактные данные",
-            "Позвать волонтера", "Вернуться в главное меню", "Вернуться в меню консультации"
+            "Номер телефона волонтера", "Вернуться в главное меню", "Вернуться в меню консультации"
     );
 
-    private static final String ANIMAL_RULE = "Тут типо правила как забрать котенка из приюта";
+    private static final String ANIMAL_RULE = "Не подходите слишком близко к животным. Не кормите с рук. Не показывайте то что вам страшно.";
     private static final String DOCUMENTS = "Необходимые документы: паспорт, договор с приютом.";
-    private static final String TRANSPORT = "Рекомендации: используйте переноску, избегайте стресса.";
+    private static final String TRANSPORT = "Рекомендации: используйте переноску.";
     private static final String HOME_KITTEN = "Для котика/щенка: лоток, миски, игрушки.";
     private static final String HOME_ADULT = "Для взрослого: место для отдыха, сбалансированное питание.";
     private static final String HOME_DISABLED = "Для животного с ограничениями: доступность, специальные приспособления.";
     private static final String CYNOLOGIST_ADVICE = "Советы кинолога: регулярные прогулки, обучение командам.";
     private static final String CYNOLOGIST_RECOMMEND = "Проверенные кинологи: Иван (+7-900-111-2222), Анна (+7-900-333-4444).";
-    private static final String REASONS_DENY = "Причины отказа: неподходящие условия, отсутствие опыта.";
-    private static final String VOLUNTEER = "Связываем вас с волонтером: +7-900-987-6543";
+    private static final String REASONS_DENY = "Причины отказа: Плохое заполнение отчётов.";
+    private static final String VOLUNTEER = "Номер для связи с волонтером: +7-900-987-6543";
 
     private final Map<Long, String> userStates = new HashMap<>();
     private final UserService userService;
@@ -78,41 +74,44 @@ public class ConsultationOwnerService {
         List<KeyboardRow> keyboardRows = new ArrayList<>();
 
         KeyboardRow row1 = new KeyboardRow();
-        row1.add("Список всех животных");
-        row1.add("Правила знакомства с животным");
+        row1.add("Вернуться в главное меню");
         keyboardRows.add(row1);
 
         KeyboardRow row2 = new KeyboardRow();
-        row2.add("Список необходимых документов");
-        row2.add("Рекомендации по транспортировке");
+        row2.add("Список всех животных");
+        row2.add("Правила знакомства с животным");
         keyboardRows.add(row2);
 
         KeyboardRow row3 = new KeyboardRow();
-        row3.add("Рекомендации по обустройству дома для котика или щенка");
+        row3.add("Список необходимых документов");
+        row3.add("Рекомендации по транспортировке");
         keyboardRows.add(row3);
 
         KeyboardRow row4 = new KeyboardRow();
-        row4.add("Рекомендации по обустройству дома для взрослого животного");
+        row4.add("Рекомендации по обустройству дома для котика или щенка");
         keyboardRows.add(row4);
 
         KeyboardRow row5 = new KeyboardRow();
-        row5.add("Рекомендации по обустройству дома для животного с ограниченными возможностями");
+        row5.add("Рекомендации по обустройству дома для взрослого животного");
         keyboardRows.add(row5);
 
         KeyboardRow row6 = new KeyboardRow();
-        row6.add("Советы кинолога");
-        row6.add("Проверенные кинологи");
+        row6.add("Рекомендации по обустройству дома для животного с ограниченными возможностями");
         keyboardRows.add(row6);
 
         KeyboardRow row7 = new KeyboardRow();
-        row7.add("Причины не дать животное");
-        row7.add("Записать контактные данные");
+        row7.add("Советы кинолога");
+        row7.add("Проверенные кинологи");
         keyboardRows.add(row7);
 
         KeyboardRow row8 = new KeyboardRow();
-        row8.add("Позвать волонтера");
-        row8.add("Вернуться в главное меню");
+        row8.add("Причины не дать животное");
+        row8.add("Записать контактные данные");
         keyboardRows.add(row8);
+
+        KeyboardRow row9 = new KeyboardRow();
+        row9.add("Номер телефона волонтера");
+        keyboardRows.add(row9);
 
         keyboardMarkup.setKeyboard(keyboardRows);
         keyboardMarkup.setResizeKeyboard(true);
@@ -164,16 +163,12 @@ public class ConsultationOwnerService {
                 userStates.put(chatId, "AWAITING_CONTACT");
                 sendResponseWithBackButton(chatId, "Введите номер телефона, например: +79123456789, 79123456789, +7-912-345-6789 или 7 912 345 6789", bot);
                 break;
-            case "Позвать волонтера":
+            case "Номер телефона волонтера":
                 sendResponseWithBackButton(chatId, VOLUNTEER, bot);
                 break;
             case "Вернуться в главное меню":
                 userStates.remove(chatId);
-                try {
-                    ((TelegramBot) bot).sendMainMenu(chatId, "");
-                } catch (Exception e) {
-                    log.error("Ошибка возврата в главное меню: {}", e.getMessage(), e);
-                }
+                ((TelegramBot) bot).sendMainMenu(chatId, "");
                 break;
             case "Вернуться в меню консультации":
                 userStates.remove(chatId);

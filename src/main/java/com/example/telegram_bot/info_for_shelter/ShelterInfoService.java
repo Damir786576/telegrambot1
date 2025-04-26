@@ -26,8 +26,8 @@ public class ShelterInfoService {
 
     private static final String SHELTER_ADDRESS = "ул. Павлушки, 228, г. Чебоксары";
     private static final String SHELTER_HOURS = "Мы открыты с 9:00 до 18:00, без выходных";
-    private static final String SHELTER_ABOUT = "Мы крутой приют!!!";
-    private static final String SHELTER_SECURITY = "Охрана: +7-900-123-45-67";
+    private static final String SHELTER_ABOUT = "Мы приют, в котором можно забирать животных, прямо через приложение!";
+    private static final String SHELTER_SECURITY = "Номер охраны: +7-900-123-45-67";
     private static final String SHELTER_SAFETY = "Не кормите животных без разрешения, соблюдайте тишину, следуйте указаниям персонала.";
     private static final String SHELTER_MAP = "https://resizer.mail.ru/p/d17e4854-1df3-5d27-b071-09678bd0e06c/AQAKZ7RvxcFpt6tJP-wZIEYWUcB-zomIpiSdeANVrkVO7e0IGqO3JpSyzM-YTNiZBB2IdrADGH86fLgGauOQCN3cgA4.jpg";
     private static final String SHELTER_VOLUNTEER = "Связываем вас с волонтером: +7-900-987-65-43";
