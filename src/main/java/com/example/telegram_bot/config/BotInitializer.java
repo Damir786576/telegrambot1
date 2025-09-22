@@ -9,19 +9,24 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+/**
+ * Инициализирует Telegram-бота при старте приложения.
+ */
 @Component
 public class BotInitializer {
 
     @Autowired
     TelegramBot bot;
 
+    /**
+     * Регистрирует бота в Telegram API.
+     */
     @EventListener({ContextRefreshedEvent.class})
     public void init() throws TelegramApiException {
         TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
         try {
             telegramBotsApi.registerBot(bot);
-        }
-        catch (TelegramApiException e) {
+        } catch (TelegramApiException e) {
         }
     }
 }

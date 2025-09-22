@@ -23,6 +23,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Основной класс Telegram-бота.
+ */
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
 
@@ -65,6 +68,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         return config.getToken();
     }
 
+    /**
+     * Обрабатывает входящие обновления от Telegram.
+     */
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage()) {
@@ -152,6 +158,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Обрабатывает команду /start.
+     */
     private void startCommandReceived(long chatId, String name) {
         try {
             UserEntity user = userService.findByChatId(chatId);
@@ -173,6 +182,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Отправляет главное меню.
+     */
     public void sendMainMenu(long chatId, String textToSend) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
@@ -213,6 +225,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
+    /**
+     * Пишет сообщения.
+     */
     private void sendMessage(long chatId, String textToSend) {
         sendMainMenu(chatId, textToSend);
     }

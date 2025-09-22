@@ -15,9 +15,15 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.*;
 import java.util.regex.Pattern;
 
+/**
+ * Сервис для предоставления информации о приюте.
+ */
 @Component
 public class ShelterInfoService {
     private static final Logger log = LoggerFactory.getLogger(ShelterInfoService.class);
+    /**
+     * Список доступных команд приюта.
+     */
     private static final List<String> SHELTER_COMMANDS = Arrays.asList(
             "Адрес и схема проезда", "Расписание работы", "Рассказать о приюте",
             "Контакты охраны", "Правила безопасности", "Оставить контактные данные",
@@ -35,22 +41,37 @@ public class ShelterInfoService {
     private final Map<Long, String> userStates = new HashMap<>();
     private final List<String> contacts = new ArrayList<>();
 
+    /**
+     * Возвращает приветственное сообщение о приюте.
+     */
     public String getShelterInfo() {
         return "Привет, в этом разделе ты можешь узнать всё о нашем приюте)))";
     }
 
+    /**
+     * Возвращает контакт волонтёра.
+     */
     public String getVolunteerContact() {
         return SHELTER_VOLUNTEER;
     }
 
+    /**
+     * Проверяет, является ли команда командой приюта.
+     */
     public boolean isShelterCommand(String command) {
         return SHELTER_COMMANDS.contains(command);
     }
 
+    /**
+     * Проверяет, ожидает ли пользователь ввода контактов.
+     */
     public boolean isAwaitingContact(long chatId) {
         return "AWAITING_CONTACT".equals(userStates.get(chatId));
     }
 
+    /**
+     * Отправляет меню приюта.
+     */
     public void sendShelterMenu(long chatId, TelegramLongPollingBot bot, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
@@ -72,7 +93,7 @@ public class ShelterInfoService {
         KeyboardRow row3 = new KeyboardRow();
         row3.add("Правила безопасности");
         row3.add("Оставить контактные данные");
-         keyboardRows.add(row3);
+        keyboardRows.add(row3);
 
         KeyboardRow row4 = new KeyboardRow();
         row4.add("Вернуться в главное меню");
@@ -89,6 +110,9 @@ public class ShelterInfoService {
         }
     }
 
+    /**
+     * Обрабатывает команды меню приюта.
+     */
     public void handleShelterMenuCommand(String command, long chatId, TelegramLongPollingBot bot) {
         switch (command) {
             case "Адрес и схема проезда":
@@ -133,6 +157,9 @@ public class ShelterInfoService {
         }
     }
 
+    /**
+     * Обрабатывает ввод контактов пользователя.
+     */
     public void handleContactInput(String input, long chatId, TelegramLongPollingBot bot) {
         if ("Вернуться в меню приюта".equals(input)) {
             userStates.remove(chatId);
