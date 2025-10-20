@@ -1,5 +1,7 @@
 package com.example.telegram_bot.service;
 
+import com.example.telegram_bot.dto.AdoptionDto;
+import com.example.telegram_bot.dto.UpdateTrialStatusRequest;
 import com.example.telegram_bot.jpa.AdoptionEntity;
 import com.example.telegram_bot.jpa.AnimalEntity;
 import com.example.telegram_bot.jpa.TrialStatus;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AdoptionService {
@@ -244,5 +247,81 @@ public class AdoptionService {
         } catch (TelegramApiException e) {
             log.error("Ошибка отправки сообщения для chatId={}: {}", chatId, e.getMessage(), e);
         }
+    }
+    public List<AdoptionDto> getAllAdoptionsDto() {
+        return findAllAdoptions().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<AdoptionDto> getUserAdoptionsDto(Long chatId) {
+        UserEntity user = userService.findByChatId(chatId);
+        if (user == null) {
+            return List.of();
+        }
+        return findByUser(user).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public AdoptionDto createAdoption(AdoptionDto request) {
+        UserEntity user = userService.findByChatId(request.getUserId());
+        AnimalEntity animal = animalService.findById(request.getAnimalId());
+
+        if (user == null || animal == null) {
+            throw new IllegalArgumentException("User or Animal not found");
+        }
+
+        AdoptionEntity entity = new AdoptionEntity();
+        entity.setUser(user);
+        entity.setAnimal(animal);
+        entity.setShelterId(request.getShelterId());
+        entity.setAdoptionDate(request.getAdoptionDate());
+        entity.setTrialStatus(TrialStatus.IN_PROGRESS);
+        entity.setTrialEndDate(request.getTrialEndDate() != null ?
+                request.getTrialEndDate() : LocalDate.now().plusDays(30));
+
+        save(entity);
+        return toDto(entity);
+    }
+
+    public AdoptionDto updateTrialStatus(Long id, UpdateTrialStatusRequest request) {
+        AdoptionEntity adoption = findById(id);
+        if (adoption == null) {
+            return null;
+        }
+
+        if (request.getTrialStatus() != null) {
+            adoption.setTrialStatus(request.getTrialStatus());
+        }
+        if (request.getExtendDays() != null) {
+            adoption.setTrialStatus(TrialStatus.EXTENDED);
+            adoption.setTrialEndDate(adoption.getTrialEndDate().plusDays(request.getExtendDays()));
+        }
+
+        save(adoption);
+        return toDto(adoption);
+    }
+    
+    private AdoptionDto toDto(AdoptionEntity entity) {
+        AdoptionDto dto = new AdoptionDto();
+        dto.setId(entity.getId());
+        dto.setUserId(entity.getUser().getId());
+        dto.setAnimalId(entity.getAnimal().getId());
+        dto.setShelterId(entity.getShelterId());
+        dto.setAdoptionDate(entity.getAdoptionDate());
+        dto.setTrialEndDate(entity.getTrialEndDate());
+        dto.setTrialStatus(entity.getTrialStatus());
+        return dto;
+    }
+
+    private AdoptionEntity toEntity(AdoptionDto dto) {
+        AdoptionEntity entity = new AdoptionEntity();
+        entity.setId(dto.getId());
+        entity.setShelterId(dto.getShelterId());
+        entity.setAdoptionDate(dto.getAdoptionDate());
+        entity.setTrialEndDate(dto.getTrialEndDate());
+        entity.setTrialStatus(dto.getTrialStatus());
+        return entity;
     }
 }

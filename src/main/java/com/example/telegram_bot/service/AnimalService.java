@@ -1,5 +1,7 @@
 package com.example.telegram_bot.service;
 
+import com.example.telegram_bot.dto.AnimalDto;
+import com.example.telegram_bot.dto.CreateAnimalRequest;
 import com.example.telegram_bot.jpa.AnimalEntity;
 import com.example.telegram_bot.jpa.AdoptionEntity;
 import com.example.telegram_bot.jpa.TrialStatus;
@@ -67,5 +69,41 @@ public class AnimalService {
         }
         log.info("Сформирован список доступных животных, размер: {}", animals.size());
         return response.toString();
+    }
+    public List<AnimalDto> getAvailableAnimalsDto() {
+        return getAnimalListString().isEmpty() ?
+                List.of() : findAll().stream()
+                .filter(this::isAvailable)
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public AnimalDto getAnimalByIdDto(Long id) {
+        AnimalEntity animal = findById(id);
+        return animal != null ? toDto(animal) : null;
+    }
+
+    public AnimalDto createAnimal(CreateAnimalRequest request) {
+        AnimalEntity animal = new AnimalEntity();
+        animal.setName(request.getName());
+        animal.setType(request.getType());
+        animal.setAge(request.getAge());
+        save(animal);
+        return toDto(animal);
+    }
+
+    private boolean isAvailable(AnimalEntity animal) {
+        AdoptionEntity adoption = adoptionRepository.findByAnimal(animal);
+        return adoption == null || adoption.getTrialStatus() == TrialStatus.FAILED;
+    }
+
+    private AnimalDto toDto(AnimalEntity animal) {
+        AnimalDto dto = new AnimalDto();
+        dto.setId(animal.getId());
+        dto.setName(animal.getName());
+        dto.setType(animal.getType());
+        dto.setAge(animal.getAge());
+        dto.setCreatedAt(animal.getCreatedAt());
+        return dto;
     }
 }
